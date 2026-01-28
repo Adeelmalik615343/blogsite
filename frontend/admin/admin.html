@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel - Blog</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Quill Editor -->
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+  <!-- Urdu Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">
+
+  <style>
+    body { background: #f5f6fa; }
+
+    .ql-editor[dir="rtl"] {
+      direction: rtl;
+      text-align: right;
+      font-family: 'Noto Nastaliq Urdu', serif;
+      font-size: 18px;
+      line-height: 1.8;
+    }
+
+    .urdu-title {
+      direction: rtl;
+      text-align: right;
+      font-family: 'Noto Nastaliq Urdu', serif;
+      font-size: 18px;
+    }
+
+    .card img {
+      max-width: 200px;
+      margin-top: 10px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container mt-4">
+  <h2 class="mb-3">🛠 Admin Panel</h2>
+
+  <!-- FORM -->
+  <div class="card p-3 mb-4">
+
+    <input type="hidden" id="blogId">
+
+    <select id="language" class="form-control mb-2">
+      <option value="english">English</option>
+      <option value="urdu">Urdu</option>
+    </select>
+
+    <input id="title" class="form-control mb-2" placeholder="Blog Title">
+    <input id="seoTitle" class="form-control mb-2" placeholder="SEO Title">
+    <textarea id="seoDescription" class="form-control mb-2" placeholder="SEO Description"></textarea>
+
+    <div id="editor" style="height:250px"></div>
+
+    <label class="mt-2">Featured Image</label>
+    <input type="file" id="image" class="form-control mb-2">
+
+    <button class="btn btn-primary" id="submitBtn">Add Blog</button>
+  </div>
+
+  <!-- BLOG LIST -->
+  <div id="blogs"></div>
+</div>
+
+<script>
+const API = "http://localhost:5000/api/blogs";
+const BASE_URL = "http://localhost:5000";
+
+const titleInput = document.getElementById("title");
+const languageSelect = document.getElementById("language");
+const seoTitleInput = document.getElementById("seoTitle");
+const seoDescInput = document.getElementById("seoDescription");
+const imageInput = document.getElementById("image");
+const submitBtn = document.getElementById("submitBtn");
+const blogIdInput = document.getElementById("blogId");
+
+// Quill (H1 REMOVED to prevent title duplication)
+const quill = new Quill("#editor", {
+  theme: "snow",
+  modules: {
+    toolbar: [
+      [{ header: [2, false] }],
+      ["bold", "italic", "underline"],
+      [{ direction: "rtl" }, { align: [] }],
+      ["link", "image"],
+      ["clean"]
+    ]
+  }
+});
+
+// Language switch
+languageSelect.addEventListener("change", () => {
+  if (languageSelect.value === "urdu") {
+    quill.root.setAttribute("dir", "rtl");
+    quill.root.style.textAlign = "right";
+    titleInput.classList.add("urdu-title");
+    titleInput.setAttribute("dir", "rtl");
+  } else {
+    quill.root.setAttribute("dir", "ltr");
+    quill.root.style.textAlign = "left";
+    titleInput.classList.remove("urdu-title");
+    titleInput.setAttribute("dir", "ltr");
+  }
+});
+
+// CREATE / UPDATE (TITLE AUTO-REMOVED FROM CONTENT)
+async function saveBlog() {
+  const id = blogIdInput.value;
+  const formData = new FormData();
+
+  const titleText = titleInput.value.trim();
+  let rawContent = quill.root.innerHTML.trim();
+
+  // 🔥 FINAL CLEAN (remove title from content)
+  let cleanContent = rawContent
+    .replace(new RegExp("^\\s*<(h1|h2|p)[^>]*>\\s*" + titleText + "\\s*</\\1>", "i"), "")
+    .replace(new RegExp("^\\s*" + titleText + "\\s*", "i"), "");
+
+  formData.append("title", titleText);
+  formData.append("content", cleanContent);
+  formData.append("language", languageSelect.value);
+  formData.append("seoTitle", seoTitleInput.value.trim());
+  formData.append("seoDescription", seoDescInput.value.trim());
+
+  if (imageInput.files[0]) {
+    formData.append("image", imageInput.files[0]);
+  }
+
+  const url = id ? `${API}/${id}` : API;
+  const method = id ? "PUT" : "POST";
+
+  const res = await fetch(url, { method, body: formData });
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.message || "Error");
+    return;
+  }
+
+  alert(id ? "✅ Blog Updated" : "✅ Blog Created");
+  resetForm();
+  loadBlogs();
+}
+
+// LOAD BLOGS
+async function loadBlogs() {
+  const res = await fetch(API);
+  const data = await res.json();
+
+  document.getElementById("blogs").innerHTML =
+    data.blogs.map(b => `
+      <div class="card p-3 mb-3">
+        <h5 class="${b.language === "urdu" ? "urdu-title" : ""}">${b.title}</h5>
+
+        ${b.image ? `<img src="${BASE_URL}${b.image}">` : ""}
+
+        <p>${b.seoDescription || ""}</p>
+
+        <button class="btn btn-warning btn-sm me-2" onclick="editBlog('${b._id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteBlog('${b._id}')">Delete</button>
+      </div>
+    `).join("");
+}
+
+// EDIT
+async function editBlog(id) {
+  const res = await fetch(`${API}/${id}`);
+  const data = await res.json();
+  const b = data.blog;
+
+  blogIdInput.value = b._id;
+  titleInput.value = b.title;
+  seoTitleInput.value = b.seoTitle || "";
+  seoDescInput.value = b.seoDescription || "";
+  languageSelect.value = b.language;
+  quill.root.innerHTML = b.content;
+
+  submitBtn.textContent = "Update Blog";
+  submitBtn.className = "btn btn-success";
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// DELETE
+async function deleteBlog(id) {
+  if (!confirm("Delete this blog?")) return;
+  await fetch(`${API}/${id}`, { method: "DELETE" });
+  loadBlogs();
+}
+
+// RESET
+function resetForm() {
+  blogIdInput.value = "";
+  titleInput.value = "";
+  seoTitleInput.value = "";
+  seoDescInput.value = "";
+  imageInput.value = "";
+  quill.setText("");
+
+  submitBtn.textContent = "Add Blog";
+  submitBtn.className = "btn btn-primary";
+}
+
+submitBtn.addEventListener("click", saveBlog);
+loadBlogs();
+</script>
+</body>
+</html>

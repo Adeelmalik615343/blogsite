@@ -1,0 +1,11 @@
+.urdu {
+  font-family: "Noto Nastaliq Urdu", serif;
+  text-align: right;
+  line-height: 2.3;
+}
+
+.english {
+  font-family: Arial, sans-serif;
+  text-align: left;
+  line-height: 1.6;
+}

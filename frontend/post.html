@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <title>Blog Post</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+      color: #333;
+      line-height: 1.9;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .content {
+      font-size: 18px;
+      text-align: left;
+    }
+
+    .content p {
+      margin-bottom: 16px;
+    }
+
+    a {
+      display: inline-block;
+      margin-top: 25px;
+      text-decoration: none;
+      color: #0d6efd;
+      font-weight: 500;
+    }
+
+    /* Urdu support */
+    .urdu {
+      font-family: 'Noto Nastaliq Urdu', serif;
+      direction: rtl;
+      text-align: right;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container" id="postContainer">
+    <h1 id="postTitle">Loading...</h1>
+    <div id="postContent" class="content"></div>
+    <a href="/">← Back to Home</a>
+  </div>
+
+  <script>
+    const BASE_URL = "http://localhost:5000";
+    const slug = window.location.pathname.split("/post/")[1];
+
+    async function loadPost() {
+      try {
+        const res = await fetch(`${BASE_URL}/api/blogs/slug/${slug}`);
+        if (!res.ok) throw new Error("Post not found");
+
+        const post = await res.json();
+
+        const postTitle = document.getElementById("postTitle");
+        const postContent = document.getElementById("postContent");
+
+        postTitle.textContent = post.title;
+        postContent.innerHTML = post.content;
+
+        // Urdu layout
+        if (post.language === "urdu") {
+          postTitle.classList.add("urdu");
+          postContent.classList.add("urdu");
+          document.documentElement.setAttribute("dir", "rtl");
+        }
+
+      } catch (error) {
+        document.getElementById("postContainer").innerHTML =
+          `<p style="color:red; text-align:center;">Failed to load post</p>`;
+        console.error(error);
+      }
+    }
+
+    loadPost();
+  </script>
+
+</body>
+</html>
