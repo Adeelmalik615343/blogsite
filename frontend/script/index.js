@@ -1,4 +1,4 @@
-const API = "http://localhost:5000/api/blogs";
+const API = "https://blogsite-3-zaob.onrender.com/api/blogs";
 let allBlogs = [];
 
 // ------------------------
