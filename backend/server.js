@@ -7,7 +7,6 @@ const cors = require("cors");
 const Blog = require("./models/Blog");
 const blogRoutes = require("./routes/blogRoutes");
 const adminRoutes = require("./routes/adminRoutes");
-const upload = require("./middleware/upload");
 
 const app = express();
 
@@ -25,10 +24,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // -----------------------
-// Serve uploaded images (must exist)
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
 // Serve frontend static files
+// -----------------------
 app.use(express.static(path.join(__dirname, "../frontend")));
 
 // -----------------------
@@ -38,14 +35,14 @@ app.use("/api/blogs", blogRoutes);
 app.use("/admin", adminRoutes);
 
 // -----------------------
-// Landing Page - return index.html
+// Landing Page - index.html
 // -----------------------
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/index.html"));
 });
 
 // -----------------------
-// API to fetch all blogs for frontend
+// Frontend: fetch all blogs
 // -----------------------
 app.get("/api/frontend/blogs", async (req, res) => {
   try {
@@ -60,10 +57,7 @@ app.get("/api/frontend/blogs", async (req, res) => {
 });
 
 // -----------------------
-// SEO Blog Page by slug (fixed featured image)
-// -----------------------
-// -----------------------
-// SEO Blog Page by slug (fixed featured image)
+// SEO Blog Page by slug
 // -----------------------
 app.get("/post/:slug", async (req, res) => {
   try {
@@ -71,9 +65,7 @@ app.get("/post/:slug", async (req, res) => {
     if (!blog) return res.status(404).send("Post not found");
 
     const isUrdu = blog.language === "urdu";
-
-    // Correct featured image URL
-    const imageUrl = blog.image ? `http://localhost:5000/${blog.image}` : "";
+    const imageUrl = blog.image || ""; // Cloudinary URL already
 
     res.send(`
 <!DOCTYPE html>
@@ -102,7 +94,7 @@ app.get("/post/:slug", async (req, res) => {
 <body>
   <div class="container">
     <h1>${blog.title}</h1>
-    
+    ${imageUrl ? `<img src="${imageUrl}" alt="${blog.title}" />` : ""}
     <div class="content">${blog.content}</div>
     <a href="/">← Back to Home</a>
   </div>
@@ -115,14 +107,29 @@ app.get("/post/:slug", async (req, res) => {
   }
 });
 
+// -----------------------
+// Test Cloudinary connection
+// -----------------------
+const cloudinary = require("./config/cloudinary");
+app.get("/api/cloudinary-test", async (req, res) => {
+  try {
+    const result = await cloudinary.uploader.upload(
+      "https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg"
+    );
+    res.json({ url: result.secure_url });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // -----------------------
 // Test Upload (DEV ONLY)
 // -----------------------
+const upload = require("./middleware/upload");
 app.post("/api/test-upload", upload.single("image"), (req, res) => {
   res.json({
     message: "Upload successful",
-    file: req.file,
+    file: req.file, // Cloudinary URL in req.file.path
   });
 });
 

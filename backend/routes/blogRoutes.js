@@ -1,7 +1,7 @@
 const express = require("express");
 const Blog = require("../models/Blog");
 const slugify = require("slugify");
-const upload = require("../middleware/upload"); // LOCAL multer
+const upload = require("../middleware/upload"); // CLOUDINARY multer
 
 const router = express.Router();
 
@@ -19,7 +19,9 @@ router.post("/", upload.single("image"), async (req, res) => {
 
     const slug = slugify(title, { lower: true, strict: true });
     const blogLanguage = ["english", "urdu"].includes(language) ? language : "english";
-    const image = req.file ? `/uploads/${req.file.filename}` : "";
+
+    // ✅ CLOUDINARY IMAGE URL
+    const image = req.file ? req.file.path : "";
 
     const blog = await Blog.create({
       title,
@@ -28,7 +30,9 @@ router.post("/", upload.single("image"), async (req, res) => {
       image,
       language: blogLanguage,
       seoTitle: seoTitle || title,
-      seoDescription: seoDescription || content.replace(/<[^>]+>/g, "").substring(0, 150)
+      seoDescription:
+        seoDescription ||
+        content.replace(/<[^>]+>/g, "").substring(0, 150)
     });
 
     console.log("✅ Blog created:", blog.slug);
@@ -60,7 +64,10 @@ router.put("/:id", upload.single("image"), async (req, res) => {
     if (seoDescription) blog.seoDescription = seoDescription;
     if (["english", "urdu"].includes(language)) blog.language = language;
 
-    if (req.file) blog.image = `/uploads/${req.file.filename}`;
+    // ✅ UPDATE IMAGE FROM CLOUDINARY
+    if (req.file) {
+      blog.image = req.file.path;
+    }
 
     await blog.save();
 
@@ -130,7 +137,8 @@ router.post("/upload-image", upload.single("image"), (req, res) => {
     return res.status(400).json({ message: "No file uploaded" });
   }
 
-  const imageUrl = `/uploads/${req.file.filename}`;
+  // ✅ CLOUDINARY URL FOR QUILL
+  const imageUrl = req.file.path;
   console.log("🖼️ Quill image uploaded:", imageUrl);
 
   res.json({ url: imageUrl });

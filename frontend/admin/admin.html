@@ -70,6 +70,8 @@
   <div id="blogs"></div>
 </div>
 
+<!-- ... your existing HTML head ... -->
+
 <script>
 const API = "http://localhost:5000/api/blogs";
 const BASE_URL = "http://localhost:5000";
@@ -82,7 +84,7 @@ const imageInput = document.getElementById("image");
 const submitBtn = document.getElementById("submitBtn");
 const blogIdInput = document.getElementById("blogId");
 
-// Quill (H1 REMOVED to prevent title duplication)
+// Quill Editor
 const quill = new Quill("#editor", {
   theme: "snow",
   modules: {
@@ -96,7 +98,40 @@ const quill = new Quill("#editor", {
   }
 });
 
-// Language switch
+// ----------- CLOUDINARY IMAGE UPLOAD HANDLER -----------
+quill.getModule('toolbar').addHandler('image', () => {
+  const input = document.createElement('input');
+  input.setAttribute('type', 'file');
+  input.setAttribute('accept', 'image/*');
+  input.click();
+
+  input.onchange = async () => {
+    const file = input.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const res = await fetch(`${API}/upload-image`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.url) {
+        const range = quill.getSelection();
+        quill.insertEmbed(range.index, 'image', data.url);
+      } else {
+        alert("Upload failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Upload error");
+    }
+  };
+});
+
+// ----------- LANGUAGE SWITCH -----------
 languageSelect.addEventListener("change", () => {
   if (languageSelect.value === "urdu") {
     quill.root.setAttribute("dir", "rtl");
@@ -111,16 +146,16 @@ languageSelect.addEventListener("change", () => {
   }
 });
 
-// CREATE / UPDATE (TITLE AUTO-REMOVED FROM CONTENT)
+// ----------- SAVE / UPDATE BLOG -----------
 async function saveBlog() {
   const id = blogIdInput.value;
   const formData = new FormData();
 
   const titleText = titleInput.value.trim();
-  let rawContent = quill.root.innerHTML.trim();
+  const rawContent = quill.root.innerHTML.trim();
 
-  // 🔥 FINAL CLEAN (remove title from content)
-  let cleanContent = rawContent
+  // Remove title from content if present
+  const cleanContent = rawContent
     .replace(new RegExp("^\\s*<(h1|h2|p)[^>]*>\\s*" + titleText + "\\s*</\\1>", "i"), "")
     .replace(new RegExp("^\\s*" + titleText + "\\s*", "i"), "");
 
@@ -131,7 +166,7 @@ async function saveBlog() {
   formData.append("seoDescription", seoDescInput.value.trim());
 
   if (imageInput.files[0]) {
-    formData.append("image", imageInput.files[0]);
+    formData.append("image", imageInput.files[0]); // Featured image upload to Cloudinary
   }
 
   const url = id ? `${API}/${id}` : API;
@@ -150,7 +185,7 @@ async function saveBlog() {
   loadBlogs();
 }
 
-// LOAD BLOGS
+// ----------- LOAD EXISTING BLOGS -----------
 async function loadBlogs() {
   const res = await fetch(API);
   const data = await res.json();
@@ -159,18 +194,15 @@ async function loadBlogs() {
     data.blogs.map(b => `
       <div class="card p-3 mb-3">
         <h5 class="${b.language === "urdu" ? "urdu-title" : ""}">${b.title}</h5>
-
-        ${b.image ? `<img src="${BASE_URL}${b.image}">` : ""}
-
+        ${b.image ? `<img src="${b.image}">` : ""}
         <p>${b.seoDescription || ""}</p>
-
         <button class="btn btn-warning btn-sm me-2" onclick="editBlog('${b._id}')">Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteBlog('${b._id}')">Delete</button>
       </div>
     `).join("");
 }
 
-// EDIT
+// ----------- EDIT BLOG -----------
 async function editBlog(id) {
   const res = await fetch(`${API}/${id}`);
   const data = await res.json();
@@ -189,14 +221,14 @@ async function editBlog(id) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-// DELETE
+// ----------- DELETE BLOG -----------
 async function deleteBlog(id) {
   if (!confirm("Delete this blog?")) return;
   await fetch(`${API}/${id}`, { method: "DELETE" });
   loadBlogs();
 }
 
-// RESET
+// ----------- RESET FORM -----------
 function resetForm() {
   blogIdInput.value = "";
   titleInput.value = "";
@@ -212,5 +244,6 @@ function resetForm() {
 submitBtn.addEventListener("click", saveBlog);
 loadBlogs();
 </script>
+
 </body>
 </html>
