@@ -1,7 +1,7 @@
 const express = require("express");
 const Blog = require("../models/Blog");
 const slugify = require("slugify");
-const upload = require("../middleware/upload"); // CLOUDINARY multer
+const upload = require("../middleware/upload"); // Cloudinary multer
 
 const router = express.Router();
 
@@ -13,14 +13,22 @@ router.post("/", upload.single("image"), async (req, res) => {
     if (!title || !content) {
       return res.status(400).json({
         success: false,
-        message: "Title and content are required"
+        message: "Title and content are required",
       });
     }
 
-    const slug = slugify(title, { lower: true, strict: true });
-    const blogLanguage = ["english", "urdu"].includes(language) ? language : "english";
+    let slug = slugify(title, { lower: true, strict: true });
 
-    // ✅ CLOUDINARY IMAGE URL
+    // prevent duplicate slugs
+    const existing = await Blog.findOne({ slug });
+    if (existing) {
+      slug = `${slug}-${Date.now()}`;
+    }
+
+    const blogLanguage = ["english", "urdu"].includes(language)
+      ? language
+      : "english";
+
     const image = req.file ? req.file.path : "";
 
     const blog = await Blog.create({
@@ -32,12 +40,10 @@ router.post("/", upload.single("image"), async (req, res) => {
       seoTitle: seoTitle || title,
       seoDescription:
         seoDescription ||
-        content.replace(/<[^>]+>/g, "").substring(0, 150)
+        content.replace(/<[^>]+>/g, "").substring(0, 150),
     });
 
-    console.log("✅ Blog created:", blog.slug);
     res.status(201).json({ success: true, blog });
-
   } catch (err) {
     console.error("❌ Create blog error:", err.message);
     res.status(500).json({ success: false, message: err.message });
@@ -55,8 +61,19 @@ router.put("/:id", upload.single("image"), async (req, res) => {
     const { title, content, seoTitle, seoDescription, language } = req.body;
 
     if (title && title !== blog.title) {
+      let slug = slugify(title, { lower: true, strict: true });
+
+      const exists = await Blog.findOne({
+        slug,
+        _id: { $ne: blog._id },
+      });
+
+      if (exists) {
+        slug = `${slug}-${Date.now()}`;
+      }
+
       blog.title = title;
-      blog.slug = slugify(title, { lower: true, strict: true });
+      blog.slug = slug;
     }
 
     if (content) blog.content = content;
@@ -64,16 +81,12 @@ router.put("/:id", upload.single("image"), async (req, res) => {
     if (seoDescription) blog.seoDescription = seoDescription;
     if (["english", "urdu"].includes(language)) blog.language = language;
 
-    // ✅ UPDATE IMAGE FROM CLOUDINARY
     if (req.file) {
-      blog.image = req.file.path;
+      blog.image = req.file.path; // Cloudinary URL
     }
 
     await blog.save();
-
-    console.log("✅ Blog updated:", blog.slug);
     res.json({ success: true, blog });
-
   } catch (err) {
     console.error("❌ Update blog error:", err.message);
     res.status(500).json({ message: err.message });
@@ -137,11 +150,7 @@ router.post("/upload-image", upload.single("image"), (req, res) => {
     return res.status(400).json({ message: "No file uploaded" });
   }
 
-  // ✅ CLOUDINARY URL FOR QUILL
-  const imageUrl = req.file.path;
-  console.log("🖼️ Quill image uploaded:", imageUrl);
-
-  res.json({ url: imageUrl });
+  res.json({ url: req.file.path }); // Cloudinary URL
 });
 
 module.exports = router;
