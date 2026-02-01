@@ -70,13 +70,9 @@
   <div id="blogs"></div>
 </div>
 
-<!-- ... your existing HTML head ... -->
-
 <script>
-const BASE_URL = "https://blogsite-3-zaob.onrender.com";
-
-// API endpoint for blogs
-const API = `${BASE_URL}/api/blogs`;
+const BASE_URL = "https://blogsite-44wc3oope-adeelmalik615343s-projects.vercel.app"; // your frontend domain
+const API = "https://blogsite-3-zaob.onrender.com/api/blogs"; // your backend API
 
 const titleInput = document.getElementById("title");
 const languageSelect = document.getElementById("language");
@@ -103,8 +99,8 @@ const quill = new Quill("#editor", {
 // ----------- CLOUDINARY IMAGE UPLOAD HANDLER -----------
 quill.getModule('toolbar').addHandler('image', () => {
   const input = document.createElement('input');
-  input.setAttribute('type', 'file');
-  input.setAttribute('accept', 'image/*');
+  input.type = 'file';
+  input.accept = 'image/*';
   input.click();
 
   input.onchange = async () => {
@@ -115,14 +111,11 @@ quill.getModule('toolbar').addHandler('image', () => {
     formData.append('image', file);
 
     try {
-      const res = await fetch(`${API}/upload-image`, {
-        method: 'POST',
-        body: formData
-      });
+      const res = await fetch(`${API}/upload-image`, { method: 'POST', body: formData });
       const data = await res.json();
       if (data.url) {
         const range = quill.getSelection();
-        quill.insertEmbed(range.index, 'image', data.url);
+        quill.insertEmbed(range ? range.index : 0, 'image', data.url);
       } else {
         alert("Upload failed");
       }
@@ -155,53 +148,52 @@ async function saveBlog() {
 
   const titleText = titleInput.value.trim();
   const rawContent = quill.root.innerHTML.trim();
-
-  // Remove title from content if present
-  const cleanContent = rawContent
-    .replace(new RegExp("^\\s*<(h1|h2|p)[^>]*>\\s*" + titleText + "\\s*</\\1>", "i"), "")
-    .replace(new RegExp("^\\s*" + titleText + "\\s*", "i"), "");
-
   formData.append("title", titleText);
-  formData.append("content", cleanContent);
+  formData.append("content", rawContent);
   formData.append("language", languageSelect.value);
   formData.append("seoTitle", seoTitleInput.value.trim());
   formData.append("seoDescription", seoDescInput.value.trim());
 
-  if (imageInput.files[0]) {
-    formData.append("image", imageInput.files[0]); // Featured image upload to Cloudinary
-  }
+  if (imageInput.files[0]) formData.append("image", imageInput.files[0]);
 
   const url = id ? `${API}/${id}` : API;
   const method = id ? "PUT" : "POST";
 
-  const res = await fetch(url, { method, body: formData });
-  const data = await res.json();
+  try {
+    const res = await fetch(url, { method, body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Error");
 
-  if (!res.ok) {
-    alert(data.message || "Error");
-    return;
+    alert(id ? "✅ Blog Updated" : "✅ Blog Created");
+    resetForm();
+    loadBlogs();
+  } catch (err) {
+    alert(err.message);
   }
-
-  alert(id ? "✅ Blog Updated" : "✅ Blog Created");
-  resetForm();
-  loadBlogs();
 }
 
 // ----------- LOAD EXISTING BLOGS -----------
 async function loadBlogs() {
-  const res = await fetch(API);
-  const data = await res.json();
+  try {
+    const res = await fetch(API);
+    const data = await res.json();
+    const blogsContainer = document.getElementById("blogs");
 
-  document.getElementById("blogs").innerHTML =
-    data.blogs.map(b => `
+    blogsContainer.innerHTML = data.blogs.map(b => {
+      // Use Cloudinary fallback if old local image
+      const img = (b.image && b.image.startsWith("http")) ? `<img src="${b.image}">` : "";
+      return `
       <div class="card p-3 mb-3">
         <h5 class="${b.language === "urdu" ? "urdu-title" : ""}">${b.title}</h5>
-        ${b.image ? `<img src="${b.image}">` : ""}
+        ${img}
         <p>${b.seoDescription || ""}</p>
         <button class="btn btn-warning btn-sm me-2" onclick="editBlog('${b._id}')">Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteBlog('${b._id}')">Delete</button>
-      </div>
-    `).join("");
+      </div>`;
+    }).join("");
+  } catch (err) {
+    console.error("Load blogs error:", err);
+  }
 }
 
 // ----------- EDIT BLOG -----------
