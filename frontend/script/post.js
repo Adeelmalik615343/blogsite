@@ -5,7 +5,7 @@ const metaDesc = document.getElementById("metaDesc");
 // 🔑 Get slug from query string ?slug=...
 const urlParams = new URLSearchParams(window.location.search);
 const slug = urlParams.get("slug");
-const BASE_URL = "http://localhost:5000"; // backend URL
+const BASE_URL = "https://blogsite-3-zaob.onrender.com"; // backend URL
 
 if (!slug) {
   postBox.innerHTML = "<p>Post not found</p>";
