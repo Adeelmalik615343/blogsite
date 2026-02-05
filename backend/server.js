@@ -27,14 +27,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // -----------------------
-// API Routes
+// API Routes ONLY
 // -----------------------
 app.use("/api/blogs", blogRoutes);
 app.use("/admin", adminRoutes);
 
-// -----------------------
 // Serve frontend static files
-// -----------------------
 app.use(express.static(path.join(__dirname, "frontend")));
 
 // -----------------------
@@ -45,6 +43,7 @@ app.get("/api/frontend/blogs", async (req, res) => {
     const blogs = await Blog.find()
       .sort({ createdAt: -1 })
       .select("title slug image seoDescription language createdAt");
+
     res.json(blogs);
   } catch (err) {
     console.error("❌ Frontend blogs error:", err.message);
@@ -121,15 +120,21 @@ app.get("/post/:slug", async (req, res) => {
 });
 
 // -----------------------
-// Serve index.html for root and all frontend routes
+// Serve index.html for all frontend routes (no wildcard)
 // -----------------------
-app.get("/", (req, res) => {
+app.use((req, res, next) => {
+  // Only serve index.html for non-API, non-admin, non-post routes
+  if (req.path.startsWith("/api") || req.path.startsWith("/admin") || req.path.startsWith("/post")) {
+    return next();
+  }
+
   res.sendFile(path.join(__dirname, "frontend", "index.html"));
 });
 
-// Catch-all for React SPA
-app.get("/*", (req, res) => {
-  res.sendFile(path.join(__dirname, "frontend", "index.html"));
+// -----------------------
+// Health Check (Render)
+app.get("/health", (req, res) => {
+  res.send("✅ Blog API is running");
 });
 
 // -----------------------
