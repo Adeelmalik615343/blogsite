@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const path = require("path"); 
+const path = require("path");
 
 const Blog = require("./models/Blog");
 const blogRoutes = require("./routes/blogRoutes");
@@ -27,11 +27,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // -----------------------
-// API Routes ONLY
+// API Routes
 // -----------------------
 app.use("/api/blogs", blogRoutes);
 app.use("/admin", adminRoutes);
+
+// -----------------------
 // Serve frontend static files
+// -----------------------
 app.use(express.static(path.join(__dirname, "frontend")));
 
 // -----------------------
@@ -49,9 +52,7 @@ app.get("/api/frontend/blogs", async (req, res) => {
     res.status(500).json({ message: "Failed to load blogs" });
   }
 });
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "frontend", "index.html"));
-});
+
 // -----------------------
 // SEO Blog Page by slug
 // -----------------------
@@ -121,10 +122,13 @@ app.get("/post/:slug", async (req, res) => {
 });
 
 // -----------------------
-// Health Check (IMPORTANT for Render)
+// Serve index.html on root and for unknown frontend routes
 // -----------------------
 app.get("/", (req, res) => {
-  res.send("✅ Blog API is running");
+  res.sendFile(path.join(__dirname, "frontend", "index.html"));
+});
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "frontend", "index.html"));
 });
 
 // -----------------------
