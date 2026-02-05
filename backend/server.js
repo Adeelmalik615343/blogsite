@@ -45,7 +45,6 @@ app.get("/api/frontend/blogs", async (req, res) => {
     const blogs = await Blog.find()
       .sort({ createdAt: -1 })
       .select("title slug image seoDescription language createdAt");
-
     res.json(blogs);
   } catch (err) {
     console.error("❌ Frontend blogs error:", err.message);
@@ -122,12 +121,14 @@ app.get("/post/:slug", async (req, res) => {
 });
 
 // -----------------------
-// Serve index.html on root and for unknown frontend routes
+// Serve index.html for root and all frontend routes
 // -----------------------
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "frontend", "index.html"));
 });
-app.get("*", (req, res) => {
+
+// Catch-all for React SPA
+app.get("/*", (req, res) => {
   res.sendFile(path.join(__dirname, "frontend", "index.html"));
 });
 
