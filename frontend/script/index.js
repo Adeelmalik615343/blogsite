@@ -1,4 +1,5 @@
-const API = "https://blogsite-3-zaob.onrender.com/api/blogs";
+
+const API = "https://blogsite-3-zaob.onrender.com/api/blogs"; // Render backend API
 let allBlogs = [];
 
 // ------------------------
@@ -31,27 +32,23 @@ function displayBlogs(blogs) {
   container.innerHTML = blogs.map(b => {
     const langClass = b.language === "urdu" ? "urdu" : "english";
 
-    // ------------------------
     // IMAGE HANDLING
-    // ------------------------
     let imageUrl = "https://via.placeholder.com/400x250?text=No+Image"; // fallback
     if (b.image) {
       if (b.image.startsWith("http")) {
-        // Cloudinary URL
+        // Cloudinary or full URL
         imageUrl = b.image;
       } else {
-        // Local upload
-        imageUrl = `http://localhost:5000${b.image}`;
+        // Local upload: prepend Render backend URL
+        imageUrl = `${API.replace('/api/blogs','')}${b.image}`;
       }
     }
 
-    // ------------------------
     // EXCERPT HANDLING
-    // ------------------------
     const excerpt = b.seoDescription ||
       (b.content ? b.content.replace(/<[^>]+>/g, "").substring(0, 120) + "..." : "");
 
-    return `<div class="col-12 col-md-6 col-lg-4">
+    return `<div class="col-12 col-md-6 col-lg-4 mb-4">
       <div class="card h-100 ${langClass}">
         <img src="${imageUrl}" class="card-img-top" alt="${b.title}">
         <div class="card-body d-flex flex-column">
@@ -102,5 +99,4 @@ document.querySelectorAll('.navbar-nav a[href^="#"]').forEach(link => {
     }
   });
 });
-
 
