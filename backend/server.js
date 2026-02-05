@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
 
+const Blog = require("./models/Blog");
 const blogRoutes = require("./routes/blogRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 
@@ -29,33 +30,34 @@ app.use(express.urlencoded({ extended: true }));
 // API Routes
 // -----------------------
 app.use("/api/blogs", blogRoutes);
-app.use("/admin-api", adminRoutes); // admin backend API
+app.use("/admin/api", adminRoutes); // separate admin API
 
 // -----------------------
-// Serve Frontend Static Files
+// Serve static frontend files
 // -----------------------
 app.use(express.static(path.join(__dirname, "frontend")));
 
 // -----------------------
-// Frontend Home Page
+// Landing Page
 // -----------------------
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "frontend", "index.html"));
 });
 
 // -----------------------
-// Admin Panel
+// Admin Page with query parameter support
 // -----------------------
 app.get("/admin", (req, res) => {
-  res.sendFile(path.join(__dirname, "frontend", "admin", "index.html"));
+  const key = req.query.key;
+  if (!key) return res.status(403).send("Admin key missing");
+  res.sendFile(path.join(__dirname, "frontend", "admin", "admin.html"));
 });
 
 // -----------------------
-// SEO Blog Page by Slug
+// SEO Blog Page by slug
 // -----------------------
 app.get("/post/:slug", async (req, res) => {
   try {
-    const Blog = require("./models/Blog");
     const blog = await Blog.findOne({ slug: req.params.slug });
     if (!blog) return res.status(404).send("Post not found");
 
@@ -69,16 +71,68 @@ app.get("/post/:slug", async (req, res) => {
   <title>${blog.seoTitle || blog.title}</title>
   <meta name="description" content="${blog.seoDescription || ""}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: ${isUrdu ? "'Noto Nastaliq Urdu', serif" : "'Roboto', sans-serif"};
+      background: #f8f9fa;
+      margin: 0;
+      color: #333;
+      line-height: 1.9;
+    }
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 15px;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      text-align: ${isUrdu ? "right" : "left"};
+    }
+    .content {
+      font-size: 18px;
+      text-align: ${isUrdu ? "right" : "left"};
+    }
+    img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin: 20px 0;
+      display: block;
+    }
+    a {
+      text-decoration: none;
+      color: #0d6efd;
+    }
+  </style>
 </head>
 <body>
-  <h1>${blog.title}</h1>
-  ${imageUrl ? `<img src="${imageUrl}" alt="${blog.title}" />` : ""}
-  <div>${blog.content}</div>
+  <div class="container">
+    <h1>${blog.title}</h1>
+    ${imageUrl ? `<img src="${imageUrl}" alt="${blog.title}" />` : ""}
+    <div class="content">${blog.content}</div>
+    <a href="/">← Back to Home</a>
+  </div>
 </body>
 </html>`);
   } catch (err) {
-    console.error(err);
+    console.error("❌ Blog page error:", err.message);
     res.status(500).send("Server error");
+  }
+});
+
+// -----------------------
+// Frontend API for blogs
+// -----------------------
+app.get("/api/frontend/blogs", async (req, res) => {
+  try {
+    const blogs = await Blog.find()
+      .sort({ createdAt: -1 })
+      .select("title slug image seoDescription language createdAt");
+    res.json(blogs);
+  } catch (err) {
+    console.error("❌ Frontend blogs error:", err.message);
+    res.status(500).json({ message: "Failed to load blogs" });
   }
 });
 
