@@ -105,6 +105,15 @@ app.get("/post/:slug", async (req, res) => {
       color: #0d6efd;
     }
   </style>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-11T7YEZQ0P"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-11T7YEZQ0P');
+  </script>
 </head>
 <body>
   <div class="container">
