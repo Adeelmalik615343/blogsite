@@ -137,6 +137,53 @@ app.get("/api/frontend/blogs", async (req, res) => {
 });
 
 // -----------------------
+// Dynamic Sitemap (SEO)
+// -----------------------
+app.get("/sitemap.xml", async (req, res) => {
+  try {
+    const blogs = await Blog.find()
+      .select("slug updatedAt")
+      .sort({ updatedAt: -1 });
+
+    res.set("Content-Type", "application/xml");
+
+    // ⚠️ CHANGE THIS TO YOUR REAL LIVE DOMAIN
+    const baseUrl = "https://blogsite-3-zaob.onrender.com";
+
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>`;
+    xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+
+    // Homepage
+    xml += `
+      <url>
+        <loc>${baseUrl}/</loc>
+        <changefreq>daily</changefreq>
+        <priority>1.0</priority>
+      </url>
+    `;
+
+    // Blog posts
+    blogs.forEach(blog => {
+      xml += `
+        <url>
+          <loc>${baseUrl}/post/${blog.slug}</loc>
+          <lastmod>${blog.updatedAt.toISOString()}</lastmod>
+          <changefreq>weekly</changefreq>
+          <priority>0.8</priority>
+        </url>
+      `;
+    });
+
+    xml += `</urlset>`;
+
+    res.send(xml);
+  } catch (err) {
+    console.error("❌ Sitemap error:", err.message);
+    res.status(500).send("Sitemap generation failed");
+  }
+});
+
+// -----------------------
 // Start Server
 // -----------------------
 async function startServer() {
