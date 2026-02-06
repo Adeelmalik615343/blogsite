@@ -137,18 +137,15 @@ app.get("/api/frontend/blogs", async (req, res) => {
 });
 
 // -----------------------
-// Dynamic Sitemap (SEO)
+// Dynamic Sitemap (SEO) - SAFE
 // -----------------------
 app.get("/sitemap.xml", async (req, res) => {
   try {
-    const blogs = await Blog.find()
-      .select("slug updatedAt")
-      .sort({ updatedAt: -1 });
+    const blogs = await Blog.find().select("slug updatedAt");
 
     res.set("Content-Type", "application/xml");
 
-    // ⚠️ CHANGE THIS TO YOUR REAL LIVE DOMAIN
-    const baseUrl = "https://blogsite-3-zaob.onrender.com";
+    const baseUrl = "https://blogsite-3-zaob.onrender.com"; // ⚠️ your live domain
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>`;
     xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
@@ -164,10 +161,14 @@ app.get("/sitemap.xml", async (req, res) => {
 
     // Blog posts
     blogs.forEach(blog => {
+      const lastMod = blog.updatedAt
+        ? blog.updatedAt.toISOString()
+        : new Date().toISOString();
+
       xml += `
         <url>
           <loc>${baseUrl}/post/${blog.slug}</loc>
-          <lastmod>${blog.updatedAt.toISOString()}</lastmod>
+          <lastmod>${lastMod}</lastmod>
           <changefreq>weekly</changefreq>
           <priority>0.8</priority>
         </url>
@@ -178,7 +179,7 @@ app.get("/sitemap.xml", async (req, res) => {
 
     res.send(xml);
   } catch (err) {
-    console.error("❌ Sitemap error:", err.message);
+    console.error("❌ Sitemap error:", err);
     res.status(500).send("Sitemap generation failed");
   }
 });
