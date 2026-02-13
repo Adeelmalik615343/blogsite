@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://blogsite-3-zaob.onrender.com/sitemap.xml
