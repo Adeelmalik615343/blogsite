@@ -43,6 +43,13 @@ app.use(express.static(path.join(__dirname, "frontend")));
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "frontend", "index.html"));
 });
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain');
+  res.send(`User-agent: *
+Allow: /
+
+Sitemap: https://blogsite-3-zaob.onrender.com/sitemap.xml`);
+});
 
 // -----------------------
 // Admin Page with query parameter support
