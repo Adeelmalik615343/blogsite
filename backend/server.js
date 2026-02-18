@@ -38,17 +38,21 @@ app.use("/admin/api", adminRoutes); // separate admin API
 app.use(express.static(path.join(__dirname, "frontend")));
 
 // -----------------------
-// Landing Page
+// Robots.txt
 // -----------------------
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "frontend", "index.html"));
-});
 app.get('/robots.txt', (req, res) => {
   res.type('text/plain');
   res.send(`User-agent: *
 Allow: /
 
 Sitemap: https://blogsite-3-zaob.onrender.com/sitemap.xml`);
+});
+
+// -----------------------
+// Landing Page
+// -----------------------
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "frontend", "index.html"));
 });
 
 // -----------------------
@@ -118,7 +122,6 @@ app.get("/post/:slug", async (req, res) => {
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-
     gtag('config', 'G-11T7YEZQ0P');
   </script>
 </head>
@@ -153,15 +156,14 @@ app.get("/api/frontend/blogs", async (req, res) => {
 });
 
 // -----------------------
-// Dynamic Sitemap (SEO) - SAFE
+// Dynamic Sitemap (SEO-safe)
 // -----------------------
 app.get("/sitemap.xml", async (req, res) => {
   try {
     const blogs = await Blog.find().select("slug updatedAt");
 
     res.set("Content-Type", "application/xml");
-
-    const baseUrl = "https://blogsite-3-zaob.onrender.com"; // ⚠️ your live domain
+    const baseUrl = "https://blogsite-3-zaob.onrender.com";
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>`;
     xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
@@ -192,11 +194,20 @@ app.get("/sitemap.xml", async (req, res) => {
     });
 
     xml += `</urlset>`;
-
     res.send(xml);
   } catch (err) {
     console.error("❌ Sitemap error:", err);
-    res.status(500).send("Sitemap generation failed");
+    // Fallback: generate minimal sitemap with only homepage
+    const fallbackXml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://blogsite-3-zaob.onrender.com/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>`;
+    res.set("Content-Type", "application/xml");
+    res.send(fallbackXml);
   }
 });
 
