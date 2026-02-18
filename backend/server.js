@@ -30,7 +30,7 @@ app.use(express.urlencoded({ extended: true }));
 // API Routes
 // -----------------------
 app.use("/api/blogs", blogRoutes);
-app.use("/admin/api", adminRoutes); // separate admin API
+app.use("/admin/api", adminRoutes);
 
 // -----------------------
 // Serve static frontend files
@@ -65,6 +65,18 @@ app.get("/admin", (req, res) => {
 });
 
 // -----------------------
+// Helper: escape XML characters
+// -----------------------
+const escapeXml = (unsafe) =>
+  unsafe.replace(/[<>&'"]/g, (c) => ({
+    '<': '&lt;',
+    '>': '&gt;',
+    '&': '&amp;',
+    '\'': '&apos;',
+    '"': '&quot;',
+  }[c]));
+
+// -----------------------
 // SEO Blog Page by slug
 // -----------------------
 app.get("/post/:slug", async (req, res) => {
@@ -79,8 +91,8 @@ app.get("/post/:slug", async (req, res) => {
 <html lang="${isUrdu ? "ur" : "en"}" dir="${isUrdu ? "rtl" : "ltr"}">
 <head>
   <meta charset="UTF-8">
-  <title>${blog.seoTitle || blog.title}</title>
-  <meta name="description" content="${blog.seoDescription || ""}">
+  <title>${escapeXml(blog.seoTitle || blog.title)}</title>
+  <meta name="description" content="${escapeXml(blog.seoDescription || "")}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">
   <style>
@@ -127,8 +139,8 @@ app.get("/post/:slug", async (req, res) => {
 </head>
 <body>
   <div class="container">
-    <h1>${blog.title}</h1>
-    ${imageUrl ? `<img src="${imageUrl}" alt="${blog.title}" />` : ""}
+    <h1>${escapeXml(blog.title)}</h1>
+    ${imageUrl ? `<img src="${imageUrl}" alt="${escapeXml(blog.title)}" />` : ""}
     <div class="content">${blog.content}</div>
     <a href="/">← Back to Home</a>
   </div>
@@ -156,14 +168,14 @@ app.get("/api/frontend/blogs", async (req, res) => {
 });
 
 // -----------------------
-// Dynamic Sitemap (SEO-safe)
+// Dynamic Sitemap (SEO-safe with fallback)
 // -----------------------
 app.get("/sitemap.xml", async (req, res) => {
+  res.set("Content-Type", "application/xml");
+  const baseUrl = "https://blogsite-3-zaob.onrender.com";
+
   try {
     const blogs = await Blog.find().select("slug updatedAt");
-
-    res.set("Content-Type", "application/xml");
-    const baseUrl = "https://blogsite-3-zaob.onrender.com";
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>`;
     xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
@@ -179,13 +191,10 @@ app.get("/sitemap.xml", async (req, res) => {
 
     // Blog posts
     blogs.forEach(blog => {
-      const lastMod = blog.updatedAt
-        ? blog.updatedAt.toISOString()
-        : new Date().toISOString();
-
+      const lastMod = blog.updatedAt ? blog.updatedAt.toISOString() : new Date().toISOString();
       xml += `
         <url>
-          <loc>${baseUrl}/post/${blog.slug}</loc>
+          <loc>${baseUrl}/post/${escapeXml(blog.slug)}</loc>
           <lastmod>${lastMod}</lastmod>
           <changefreq>weekly</changefreq>
           <priority>0.8</priority>
@@ -195,18 +204,18 @@ app.get("/sitemap.xml", async (req, res) => {
 
     xml += `</urlset>`;
     res.send(xml);
+
   } catch (err) {
     console.error("❌ Sitemap error:", err);
-    // Fallback: generate minimal sitemap with only homepage
+    // Fallback: minimal sitemap
     const fallbackXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://blogsite-3-zaob.onrender.com/</loc>
+    <loc>${baseUrl}/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
 </urlset>`;
-    res.set("Content-Type", "application/xml");
     res.send(fallbackXml);
   }
 });
