@@ -27,10 +27,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // -----------------------
-// API Routes
+// ✅ ROBOTS.TXT (MUST BE FIRST)
 // -----------------------
-app.use("/api/blogs", blogRoutes);
-app.use("/admin/api", adminRoutes);
+app.get("/robots.txt", (req, res) => {
+  res.set("Content-Type", "text/plain");
+  res.send(`User-agent: *
+Allow: /
+
+Sitemap: https://blogsite-3-zaob.onrender.com/sitemap.xml`);
+});
 
 // -----------------------
 // Serve static frontend files
@@ -38,15 +43,10 @@ app.use("/admin/api", adminRoutes);
 app.use(express.static(path.join(__dirname, "frontend")));
 
 // -----------------------
-// Robots.txt
+// API Routes
 // -----------------------
-app.get('/robots.txt', (req, res) => {
-  res.type('text/plain');
-  res.send(`User-agent: *
-Allow: /
-
-Sitemap: https://blogsite-3-zaob.onrender.com/sitemap.xml`);
-});
+app.use("/api/blogs", blogRoutes);
+app.use("/admin/api", adminRoutes);
 
 // -----------------------
 // Landing Page
@@ -56,7 +56,7 @@ app.get("/", (req, res) => {
 });
 
 // -----------------------
-// Admin Page with query parameter support
+// Admin Page
 // -----------------------
 app.get("/admin", (req, res) => {
   const key = req.query.key;
@@ -67,17 +67,17 @@ app.get("/admin", (req, res) => {
 // -----------------------
 // Helper: escape XML characters
 // -----------------------
-const escapeXml = (unsafe) =>
-  unsafe.replace(/[<>&'"]/g, (c) => ({
-    '<': '&lt;',
-    '>': '&gt;',
-    '&': '&amp;',
-    '\'': '&apos;',
-    '"': '&quot;',
+const escapeXml = (str = "") =>
+  str.replace(/[<>&'"]/g, c => ({
+    "<": "&lt;",
+    ">": "&gt;",
+    "&": "&amp;",
+    "'": "&apos;",
+    '"': "&quot;"
   }[c]));
 
 // -----------------------
-// SEO Blog Page by slug
+// SEO Blog Page
 // -----------------------
 app.get("/post/:slug", async (req, res) => {
   try {
@@ -85,7 +85,6 @@ app.get("/post/:slug", async (req, res) => {
     if (!blog) return res.status(404).send("Post not found");
 
     const isUrdu = blog.language === "urdu";
-    const imageUrl = blog.image || "";
 
     res.send(`<!DOCTYPE html>
 <html lang="${isUrdu ? "ur" : "en"}" dir="${isUrdu ? "rtl" : "ltr"}">
@@ -94,66 +93,21 @@ app.get("/post/:slug", async (req, res) => {
   <title>${escapeXml(blog.seoTitle || blog.title)}</title>
   <meta name="description" content="${escapeXml(blog.seoDescription || "")}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: ${isUrdu ? "'Noto Nastaliq Urdu', serif" : "'Roboto', sans-serif"};
-      background: #f8f9fa;
-      margin: 0;
-      color: #333;
-      line-height: 1.9;
-    }
-    .container {
-      max-width: 800px;
-      margin: 40px auto;
-      padding: 15px;
-    }
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 20px;
-      text-align: ${isUrdu ? "right" : "left"};
-    }
-    .content {
-      font-size: 18px;
-      text-align: ${isUrdu ? "right" : "left"};
-    }
-    img {
-      max-width: 100%;
-      border-radius: 8px;
-      margin: 20px 0;
-      display: block;
-    }
-    a {
-      text-decoration: none;
-      color: #0d6efd;
-    }
-  </style>
-  <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-11T7YEZQ0P"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-11T7YEZQ0P');
-  </script>
 </head>
 <body>
-  <div class="container">
-    <h1>${escapeXml(blog.title)}</h1>
-    ${imageUrl ? `<img src="${imageUrl}" alt="${escapeXml(blog.title)}" />` : ""}
-    <div class="content">${blog.content}</div>
-    <a href="/">← Back to Home</a>
-  </div>
+  <h1>${escapeXml(blog.title)}</h1>
+  ${blog.image ? `<img src="${blog.image}" alt="${escapeXml(blog.title)}" />` : ""}
+  <div>${blog.content}</div>
 </body>
 </html>`);
   } catch (err) {
-    console.error("❌ Blog page error:", err.message);
+    console.error("❌ Blog error:", err);
     res.status(500).send("Server error");
   }
 });
 
 // -----------------------
-// Frontend API for blogs
+// Frontend API
 // -----------------------
 app.get("/api/frontend/blogs", async (req, res) => {
   try {
@@ -162,13 +116,12 @@ app.get("/api/frontend/blogs", async (req, res) => {
       .select("title slug image seoDescription language createdAt");
     res.json(blogs);
   } catch (err) {
-    console.error("❌ Frontend blogs error:", err.message);
     res.status(500).json({ message: "Failed to load blogs" });
   }
 });
 
 // -----------------------
-// Dynamic Sitemap (SEO-safe with fallback)
+// ✅ DYNAMIC SITEMAP (GOOGLE SAFE)
 // -----------------------
 app.get("/sitemap.xml", async (req, res) => {
   res.set("Content-Type", "application/xml");
@@ -180,26 +133,21 @@ app.get("/sitemap.xml", async (req, res) => {
     let xml = `<?xml version="1.0" encoding="UTF-8"?>`;
     xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
 
-    // Homepage
     xml += `
       <url>
         <loc>${baseUrl}/</loc>
         <changefreq>daily</changefreq>
         <priority>1.0</priority>
-      </url>
-    `;
+      </url>`;
 
-    // Blog posts
     blogs.forEach(blog => {
-      const lastMod = blog.updatedAt ? blog.updatedAt.toISOString() : new Date().toISOString();
       xml += `
-        <url>
-          <loc>${baseUrl}/post/${escapeXml(blog.slug)}</loc>
-          <lastmod>${lastMod}</lastmod>
-          <changefreq>weekly</changefreq>
-          <priority>0.8</priority>
-        </url>
-      `;
+      <url>
+        <loc>${baseUrl}/post/${escapeXml(blog.slug)}</loc>
+        <lastmod>${(blog.updatedAt || new Date()).toISOString()}</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+      </url>`;
     });
 
     xml += `</urlset>`;
@@ -207,16 +155,12 @@ app.get("/sitemap.xml", async (req, res) => {
 
   } catch (err) {
     console.error("❌ Sitemap error:", err);
-    // Fallback: minimal sitemap
-    const fallbackXml = `<?xml version="1.0" encoding="UTF-8"?>
+    res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>${baseUrl}/</loc>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
   </url>
-</urlset>`;
-    res.send(fallbackXml);
+</urlset>`);
   }
 });
 
@@ -233,7 +177,7 @@ async function startServer() {
       console.log(`🚀 Server running on port ${PORT}`);
     });
   } catch (err) {
-    console.error("❌ MongoDB Connection Failed:", err.message);
+    console.error("❌ MongoDB failed:", err.message);
     process.exit(1);
   }
 }
