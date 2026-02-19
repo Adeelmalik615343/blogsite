@@ -27,10 +27,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // -----------------------
-// ✅ ROBOTS.TXT (MUST BE FIRST)
+// ✅ ROBOTS.TXT
+// Must be first
 // -----------------------
 app.get("/robots.txt", (req, res) => {
-  res.set("Content-Type", "text/plain");
+  res.setHeader("Content-Type", "text/plain");
   res.send(`User-agent: *
 Allow: /
 
@@ -38,7 +39,7 @@ Sitemap: https://blogsite-3-zaob.onrender.com/sitemap.xml`);
 });
 
 // -----------------------
-// Serve static frontend files
+// Serve Static Frontend
 // -----------------------
 app.use(express.static(path.join(__dirname, "frontend")));
 
@@ -65,16 +66,10 @@ app.get("/admin", (req, res) => {
 });
 
 // -----------------------
-// Helper: escape XML characters
+// Helper: Escape XML characters
 // -----------------------
 const escapeXml = (str = "") =>
-  str.replace(/[<>&'"]/g, c => ({
-    "<": "&lt;",
-    ">": "&gt;",
-    "&": "&amp;",
-    "'": "&apos;",
-    '"': "&quot;"
-  }[c]));
+  str.replace(/[<>&'"]/g, c => ({"<":"&lt;",">":"&gt;","&":"&amp;","'":"&apos;",'"':"&quot;"}[c]));
 
 // -----------------------
 // SEO Blog Page
@@ -121,10 +116,11 @@ app.get("/api/frontend/blogs", async (req, res) => {
 });
 
 // -----------------------
-// ✅ DYNAMIC SITEMAP (GOOGLE SAFE)
+// ✅ DYNAMIC SITEMAP.XML
+// Fully Google Safe
 // -----------------------
 app.get("/sitemap.xml", async (req, res) => {
-  res.set("Content-Type", "application/xml");
+  res.setHeader("Content-Type", "application/xml");
   const baseUrl = "https://blogsite-3-zaob.onrender.com";
 
   try {
@@ -133,29 +129,32 @@ app.get("/sitemap.xml", async (req, res) => {
     let xml = `<?xml version="1.0" encoding="UTF-8"?>`;
     xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
 
+    // Homepage
     xml += `
-      <url>
-        <loc>${baseUrl}/</loc>
-        <changefreq>daily</changefreq>
-        <priority>1.0</priority>
-      </url>`;
+  <url>
+    <loc>${baseUrl}/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>`;
 
+    // Blog posts
     blogs.forEach(blog => {
       xml += `
-      <url>
-        <loc>${baseUrl}/post/${escapeXml(blog.slug)}</loc>
-        <lastmod>${(blog.updatedAt || new Date()).toISOString()}</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
-      </url>`;
+  <url>
+    <loc>${baseUrl}/post/${escapeXml(blog.slug)}</loc>
+    <lastmod>${(blog.updatedAt || new Date()).toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
     });
 
     xml += `</urlset>`;
-    res.send(xml);
+    res.status(200).send(xml);
 
   } catch (err) {
     console.error("❌ Sitemap error:", err);
-    res.send(`<?xml version="1.0" encoding="UTF-8"?>
+    // Fallback sitemap with homepage only
+    res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>${baseUrl}/</loc>
