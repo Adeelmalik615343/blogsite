@@ -1,62 +1,39 @@
-This XML file does not appear to have any style information associated with it. The document tree is shown below.
+<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-<url>
-<loc>https://blogsite-3-zaob.onrender.com/</loc>
-<changefreq>daily</changefreq>
-<priority>1.0</priority>
-</url>
-<url>
-<loc>https://blogsite-3-zaob.onrender.com/post/xcvbknakdfjkbdj</loc>
-<lastmod>2026-02-23T10:43:34.174Z</lastmod>
-<changefreq>weekly</changefreq>
-<priority>0.8</priority>
-</url>
-<url>
-<loc>https://blogsite-3-zaob.onrender.com/post/hjrohjwroj</loc>
-<lastmod>2026-02-23T10:43:34.174Z</lastmod>
-<changefreq>weekly</changefreq>
-<priority>0.8</priority>
-</url>
-<url>
-<loc>https://blogsite-3-zaob.onrender.com/post/html5-in-urdu</loc>
-<lastmod>2026-02-23T10:43:34.174Z</lastmod>
-<changefreq>weekly</changefreq>
-<priority>0.8</priority>
-</url>
-<url>
-<loc>https://blogsite-3-zaob.onrender.com/post/new-java-script</loc>
-<lastmod>2026-02-23T10:43:34.174Z</lastmod>
-<changefreq>weekly</changefreq>
-<priority>0.8</priority>
-</url>
-<url>
-<loc>https://blogsite-3-zaob.onrender.com/post/wyb-wylpmn-kya</loc>
-<lastmod>2026-02-23T10:43:34.174Z</lastmod>
-<changefreq>weekly</changefreq>
-<priority>0.8</priority>
-</url>
-<url>
-<loc>https://blogsite-3-zaob.onrender.com/post/post-2</loc>
-<lastmod>2026-02-23T10:43:34.174Z</lastmod>
-<changefreq>weekly</changefreq>
-<priority>0.8</priority>
-</url>
-<url>
-<loc>https://blogsite-3-zaob.onrender.com/post/post-3</loc>
-<lastmod>2026-02-23T10:43:34.174Z</lastmod>
-<changefreq>weekly</changefreq>
-<priority>0.8</priority>
-</url>
-<url>
-<loc>https://blogsite-3-zaob.onrender.com/post/post-4</loc>
-<lastmod>2026-02-23T10:43:34.174Z</lastmod>
-<changefreq>weekly</changefreq>
-<priority>0.8</priority>
-</url>
-<url>
-<loc>https://blogsite-3-zaob.onrender.com/post/html-table-kya-awr-wyb-pyj-pr-ybl-kys-bnaey-jaty</loc>
-<lastmod>2026-02-23T10:43:34.174Z</lastmod>
-<changefreq>weekly</changefreq>
-<priority>0.8</priority>
-</url>
+
+  <url>
+    <loc>https://blogsite-3-zaob.onrender.com/</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <url>
+    <loc>https://blogsite-3-zaob.onrender.com/post/html5-in-urdu</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blogsite-3-zaob.onrender.com/post/new-java-script</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blogsite-3-zaob.onrender.com/post/wyb-wylpmn-kya</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blogsite-3-zaob.onrender.com/post/html-table-kya-awr-wyb-pyj-pr-ybl-kys-bnaey-jaty</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
 </urlset>
