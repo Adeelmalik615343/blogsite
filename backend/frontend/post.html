@@ -9,38 +9,74 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">
 
   <style>
+    /* ---------- GLOBAL RESET ---------- */
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: 'Roboto', sans-serif;
       background: #f8f9fa;
       margin: 0;
       color: #333;
       line-height: 1.9;
+      padding: 10px;
     }
 
+    /* ---------- CONTAINER ---------- */
     .container {
       max-width: 800px;
-      margin: 40px auto;
-      padding: 20px;
+      margin: 20px auto;
+      padding: 16px;
       background: #fff;
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
 
+    /* ---------- TITLE ---------- */
     h1 {
-      font-size: 2rem;
-      margin-bottom: 20px;
-      text-align: left;
+      font-size: 1.8rem;
+      margin-bottom: 18px;
+      line-height: 1.4;
+      word-wrap: break-word;
     }
 
+    /* ---------- CONTENT ---------- */
     .content {
-      font-size: 18px;
-      text-align: left;
+      font-size: 1rem;
     }
 
     .content p {
       margin-bottom: 16px;
     }
 
+    /* ---------- RESPONSIVE IMAGES ---------- */
+    .content img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 15px auto;
+      border-radius: 6px;
+    }
+
+    /* ---------- TABLE RESPONSIVE ---------- */
+    .content table {
+      width: 100%;
+      border-collapse: collapse;
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    /* ---------- CODE & LONG TEXT ---------- */
+    .content pre,
+    .content code {
+      max-width: 100%;
+      overflow-x: auto;
+      word-wrap: break-word;
+    }
+
+    /* ---------- LINKS ---------- */
     a {
       display: inline-block;
       margin-top: 25px;
@@ -49,11 +85,37 @@
       font-weight: 500;
     }
 
-    /* Urdu support */
+    /* ---------- URDU SUPPORT ---------- */
     .urdu {
       font-family: 'Noto Nastaliq Urdu', serif;
       direction: rtl;
       text-align: right;
+      line-height: 2.2;
+    }
+
+    /* ---------- MEDIA QUERIES ---------- */
+    @media (min-width: 768px) {
+      body {
+        padding: 20px;
+      }
+
+      .container {
+        padding: 24px;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .content {
+        font-size: 1.1rem;
+      }
+    }
+
+    @media (min-width: 1200px) {
+      .container {
+        max-width: 900px;
+      }
     }
   </style>
 </head>
@@ -67,7 +129,7 @@
   </div>
 
   <script>
-   // ✅ Use Render backend URL
+    // ✅ Render backend URL
     const BASE_URL = "https://blogsite-3-zaob.onrender.com"; 
     const slug = window.location.pathname.split("/post/")[1];
 
@@ -84,7 +146,7 @@
         postTitle.textContent = post.title;
         postContent.innerHTML = post.content;
 
-        // Urdu layout
+        // Urdu layout support
         if (post.language === "urdu") {
           postTitle.classList.add("urdu");
           postContent.classList.add("urdu");
