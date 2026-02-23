@@ -3,6 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 
 const Blog = require("./models/Blog");
 const blogRoutes = require("./routes/blogRoutes");
@@ -28,14 +29,14 @@ app.use(express.urlencoded({ extended: true }));
 
 // -----------------------
 // ✅ ROBOTS.TXT
-// Must be first
+// Allow all search engines
 // -----------------------
 app.get("/robots.txt", (req, res) => {
   res.setHeader("Content-Type", "text/plain");
   res.send(`User-agent: *
 Allow: /
 
-Sitemap: https://blogsite-3-zaob.onrender.com/sitemap.xml`);
+Sitemap: https://full-project-5.onrender.com/sitemap.xml`);
 });
 
 // -----------------------
@@ -116,14 +117,22 @@ app.get("/api/frontend/blogs", async (req, res) => {
 });
 
 // -----------------------
-// ✅ DYNAMIC SITEMAP.XML
-// Fully Google Safe
+// ✅ SITEMAP.XML
+// Dynamic + Manual option
 // -----------------------
 app.get("/sitemap.xml", async (req, res) => {
   res.setHeader("Content-Type", "application/xml");
-  const baseUrl = "https://blogsite-3-zaob.onrender.com";
+  const baseUrl = "https://full-project-5.onrender.com";
 
   try {
+    // Check if manual sitemap exists
+    const manualPath = path.join(__dirname, "frontend", "sitemap.xml");
+    if (fs.existsSync(manualPath)) {
+      const manualXml = fs.readFileSync(manualPath, "utf-8");
+      return res.status(200).send(manualXml);
+    }
+
+    // Else generate dynamic sitemap
     const blogs = await Blog.find().select("slug updatedAt");
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>`;
@@ -153,7 +162,7 @@ app.get("/sitemap.xml", async (req, res) => {
 
   } catch (err) {
     console.error("❌ Sitemap error:", err);
-    // Fallback sitemap with homepage only
+    // Fallback sitemap
     res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
