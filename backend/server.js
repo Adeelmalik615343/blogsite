@@ -75,10 +75,19 @@ const escapeXml = (str = "") =>
 // -----------------------
 // SEO Blog Page
 // -----------------------
+// -----------------------
+// SEO Blog Page (UPDATED)
+// -----------------------
 app.get("/post/:slug", async (req, res) => {
   try {
     const blog = await Blog.findOne({ slug: req.params.slug });
     if (!blog) return res.status(404).send("Post not found");
+
+    // 🔥 Fetch latest posts (excluding current)
+    const latestPosts = await Blog.find({ slug: { $ne: blog.slug } })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select("title slug");
 
     const isUrdu = blog.language === "urdu";
 
@@ -90,55 +99,48 @@ app.get("/post/:slug", async (req, res) => {
   <meta name="description" content="${escapeXml(blog.seoDescription || "")}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      padding: 0;
       background: #f4f6f8;
       font-family: ${isUrdu ? "'Noto Nastaliq Urdu'" : "'Roboto'"}, sans-serif;
       line-height: 1.9;
       color: #222;
     }
 
-    .post-container {
-      max-width: 900px;
+    .layout {
+      max-width: 1200px;
       margin: 30px auto;
-      background: #ffffff;
+      display: flex;
+      gap: 20px;
+      padding: 0 10px;
+    }
+
+    .post-container {
+      flex: 3;
+      background: #fff;
       padding: 24px;
       border-radius: 10px;
       box-shadow: 0 6px 18px rgba(0,0,0,0.08);
     }
 
     h1 {
-      font-size: 2rem;
+      text-align: center;
       margin-bottom: 20px;
-      text-align: center;
-    }
-
-    .post-image {
-      margin: 20px 0;
-      text-align: center;
     }
 
     .post-image img {
       max-width: 100%;
       height: auto;
+      display: block;
+      margin: 20px auto;
       border-radius: 8px;
     }
 
-    .post-content p {
-      margin-bottom: 16px;
-      font-size: 1.05rem;
-    }
-
-    /* Make embedded images responsive */
     .post-content img {
       max-width: 100%;
       height: auto;
@@ -147,14 +149,49 @@ app.get("/post/:slug", async (req, res) => {
       border-radius: 6px;
     }
 
-    @media (max-width: 600px) {
-      .post-container {
-        margin: 10px;
-        padding: 16px;
-      }
+    /* Sidebar */
+    .sidebar {
+      flex: 1;
+      background: #fff;
+      padding: 18px;
+      border-radius: 10px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.07);
+      height: fit-content;
+      position: sticky;
+      top: 20px;
+    }
 
-      h1 {
-        font-size: 1.5rem;
+    .sidebar h3 {
+      margin-bottom: 12px;
+      font-size: 1.2rem;
+    }
+
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .sidebar li {
+      margin-bottom: 10px;
+    }
+
+    .sidebar a {
+      text-decoration: none;
+      color: #0066cc;
+      font-size: 0.95rem;
+    }
+
+    .sidebar a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        flex-direction: column;
+      }
+      .sidebar {
+        position: static;
       }
     }
   </style>
@@ -162,21 +199,40 @@ app.get("/post/:slug", async (req, res) => {
 
 <body>
 
-  <article class="post-container">
-    <h1>${escapeXml(blog.title)}</h1>
+  <div class="layout">
 
-    ${
-      blog.image
-        ? `<div class="post-image">
-             <img src="${blog.image}" alt="${escapeXml(blog.title)}">
-           </div>`
-        : ""
-    }
+    <article class="post-container">
+      <h1>${escapeXml(blog.title)}</h1>
 
-    <div class="post-content">
-      ${blog.content}
-    </div>
-  </article>
+      ${
+        blog.image
+          ? `<div class="post-image">
+               <img src="${blog.image}" alt="${escapeXml(blog.title)}" loading="lazy">
+             </div>`
+          : ""
+      }
+
+      <div class="post-content">
+        ${blog.content}
+      </div>
+    </article>
+
+    <aside class="sidebar">
+      <h3>Latest Posts</h3>
+      <ul>
+        ${
+          latestPosts.length
+            ? latestPosts
+                .map(
+                  p => `<li><a href="/post/${p.slug}">${escapeXml(p.title)}</a></li>`
+                )
+                .join("")
+            : "<li>No posts yet</li>"
+        }
+      </ul>
+    </aside>
+
+  </div>
 
 </body>
 </html>`);
