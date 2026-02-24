@@ -89,11 +89,95 @@ app.get("/post/:slug", async (req, res) => {
   <title>${escapeXml(blog.seoTitle || blog.title)}</title>
   <meta name="description" content="${escapeXml(blog.seoDescription || "")}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f4f6f8;
+      font-family: ${isUrdu ? "'Noto Nastaliq Urdu'" : "'Roboto'"}, sans-serif;
+      line-height: 1.9;
+      color: #222;
+    }
+
+    .post-container {
+      max-width: 900px;
+      margin: 30px auto;
+      background: #ffffff;
+      padding: 24px;
+      border-radius: 10px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .post-image {
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .post-image img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+    }
+
+    .post-content p {
+      margin-bottom: 16px;
+      font-size: 1.05rem;
+    }
+
+    /* Make embedded images responsive */
+    .post-content img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 15px auto;
+      border-radius: 6px;
+    }
+
+    @media (max-width: 600px) {
+      .post-container {
+        margin: 10px;
+        padding: 16px;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
 </head>
+
 <body>
-  <h1>${escapeXml(blog.title)}</h1>
-  ${blog.image ? `<img src="${blog.image}" alt="${escapeXml(blog.title)}" />` : ""}
-  <div>${blog.content}</div>
+
+  <article class="post-container">
+    <h1>${escapeXml(blog.title)}</h1>
+
+    ${
+      blog.image
+        ? `<div class="post-image">
+             <img src="${blog.image}" alt="${escapeXml(blog.title)}">
+           </div>`
+        : ""
+    }
+
+    <div class="post-content">
+      ${blog.content}
+    </div>
+  </article>
+
 </body>
 </html>`);
   } catch (err) {
