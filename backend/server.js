@@ -3,6 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 
 const Blog = require("./models/Blog");
 const blogRoutes = require("./routes/blogRoutes");
@@ -23,13 +24,23 @@ app.use(cors({
   origin: "*",
   methods: ["GET", "POST", "PUT", "DELETE"],
 }));
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // -----------------------
-// ✅ Serve Static Frontend
-// robots.txt & sitemap.xml are here
+// ✅ ROBOTS.TXT
+// Allow all search engines
+// -----------------------
+app.get("/robots.txt", (req, res) => {
+  res.setHeader("Content-Type", "text/plain");
+  res.send(`User-agent: *
+Allow: /
+
+Sitemap: https://full-project-5.onrender.com/sitemap.xml`);
+});
+
+// -----------------------
+// Serve Static Frontend
 // -----------------------
 app.use(express.static(path.join(__dirname, "frontend")));
 
@@ -56,16 +67,10 @@ app.get("/admin", (req, res) => {
 });
 
 // -----------------------
-// Helper: Escape HTML
+// Helper: Escape XML characters
 // -----------------------
-const escapeHtml = (str = "") =>
-  str.replace(/[<>&'"]/g, c => ({
-    "<": "&lt;",
-    ">": "&gt;",
-    "&": "&amp;",
-    "'": "&apos;",
-    '"': "&quot;"
-  }[c]));
+const escapeXml = (str = "") =>
+  str.replace(/[<>&'"]/g, c => ({"<":"&lt;",">":"&gt;","&":"&amp;","'":"&apos;",'"':"&quot;"}[c]));
 
 // -----------------------
 // SEO Blog Page
@@ -75,85 +80,20 @@ app.get("/post/:slug", async (req, res) => {
     const blog = await Blog.findOne({ slug: req.params.slug });
     if (!blog) return res.status(404).send("Post not found");
 
-    const latestPosts = await Blog.find({ slug: { $ne: blog.slug } })
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select("title slug");
-
     const isUrdu = blog.language === "urdu";
-    const baseUrl = "https://blogsite-3-zaob.onrender.com";
 
     res.send(`<!DOCTYPE html>
 <html lang="${isUrdu ? "ur" : "en"}" dir="${isUrdu ? "rtl" : "ltr"}">
 <head>
   <meta charset="UTF-8">
-  <title>${escapeHtml(blog.seoTitle || blog.title)}</title>
-  <meta name="description" content="${escapeHtml(blog.seoDescription || "")}">
+  <title>${escapeXml(blog.seoTitle || blog.title)}</title>
+  <meta name="description" content="${escapeXml(blog.seoDescription || "")}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <link rel="canonical" href="${baseUrl}/post/${blog.slug}">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">
-
-  <style>
-    body {
-      margin: 0;
-      font-family: ${isUrdu ? "'Noto Nastaliq Urdu'" : "'Roboto'"}, sans-serif;
-      background: #f4f6f8;
-      line-height: 1.9;
-    }
-    .layout {
-      max-width: 1200px;
-      margin: 30px auto;
-      display: flex;
-      gap: 20px;
-      padding: 0 12px;
-    }
-    .post-container {
-      flex: 3;
-      background: #fff;
-      padding: 24px;
-      border-radius: 10px;
-    }
-    img {
-      max-width: 100%;
-      height: auto;
-    }
-    .sidebar {
-      flex: 1;
-      background: #fff;
-      padding: 18px;
-      border-radius: 10px;
-      height: fit-content;
-    }
-    @media (max-width: 900px) {
-      .layout { flex-direction: column; }
-    }
-  </style>
 </head>
-
 <body>
-  <div class="layout">
-
-    <article class="post-container">
-      <h1>${escapeHtml(blog.title)}</h1>
-      ${blog.image ? `<img src="${blog.image}" alt="${escapeHtml(blog.title)}">` : ""}
-      <div>${blog.content}</div>
-    </article>
-
-    <aside class="sidebar">
-      <h3>Latest Posts</h3>
-      <ul>
-        ${
-          latestPosts.length
-            ? latestPosts.map(
-                p => `<li><a href="/post/${p.slug}">${escapeHtml(p.title)}</a></li>`
-              ).join("")
-            : "<li>No posts yet</li>"
-        }
-      </ul>
-    </aside>
-
-  </div>
+  <h1>${escapeXml(blog.title)}</h1>
+  ${blog.image ? `<img src="${blog.image}" alt="${escapeXml(blog.title)}" />` : ""}
+  <div>${blog.content}</div>
 </body>
 </html>`);
   } catch (err) {
@@ -163,7 +103,7 @@ app.get("/post/:slug", async (req, res) => {
 });
 
 // -----------------------
-// Frontend Blogs API
+// Frontend API
 // -----------------------
 app.get("/api/frontend/blogs", async (req, res) => {
   try {
@@ -173,6 +113,62 @@ app.get("/api/frontend/blogs", async (req, res) => {
     res.json(blogs);
   } catch (err) {
     res.status(500).json({ message: "Failed to load blogs" });
+  }
+});
+
+// -----------------------
+// ✅ SITEMAP.XML
+// Dynamic + Manual option
+// -----------------------
+app.get("/sitemap.xml", async (req, res) => {
+  res.setHeader("Content-Type", "application/xml");
+  const baseUrl = "https://full-project-5.onrender.com";
+
+  try {
+    // Check if manual sitemap exists
+    const manualPath = path.join(__dirname, "frontend", "sitemap.xml");
+    if (fs.existsSync(manualPath)) {
+      const manualXml = fs.readFileSync(manualPath, "utf-8");
+      return res.status(200).send(manualXml);
+    }
+
+    // Else generate dynamic sitemap
+    const blogs = await Blog.find().select("slug updatedAt");
+
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>`;
+    xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+
+    // Homepage
+    xml += `
+  <url>
+    <loc>${baseUrl}/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>`;
+
+    // Blog posts
+    blogs.forEach(blog => {
+      xml += `
+  <url>
+    <loc>${baseUrl}/post/${escapeXml(blog.slug)}</loc>
+    <lastmod>${(blog.updatedAt || new Date()).toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+    });
+
+    xml += `</urlset>`;
+    res.status(200).send(xml);
+
+  } catch (err) {
+    console.error("❌ Sitemap error:", err);
+    // Fallback sitemap
+    res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${baseUrl}/</loc>
+  </url>
+</urlset>`);
   }
 });
 
@@ -189,7 +185,7 @@ async function startServer() {
       console.log(`🚀 Server running on port ${PORT}`);
     });
   } catch (err) {
-    console.error("❌ MongoDB connection failed:", err.message);
+    console.error("❌ MongoDB failed:", err.message);
     process.exit(1);
   }
 }
